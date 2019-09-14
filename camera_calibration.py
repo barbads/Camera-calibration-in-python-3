@@ -1,18 +1,18 @@
 import numpy as np
 import cv2
-import time 
+import time
 
 def calibration(WebCam, tam_quad, board_h, board_w, time_step, max_images):
     '''
-    Metodo para calibrar a camera, utiliza o padrao de calibracao forncido (pattern.pdf) para 
+    Metodo para calibrar a camera, utiliza o padrao de calibracao forncido (pattern.pdf) para
 calcular a matriz dos parametros intrinsecos da camera e os parametros de distorcao da mesma
 
     Parametros:
         -WebCam: Objeto do openCV que abriu a webcam do computador
         -tam_quad: Tamanho (mm) do quadrado no padrao impresso
-        -board_h: Quantidade de cantos com intersecao de 4 quadrados na vertical 
-        -board_w: Quantidade de cantos com intersecao de 4 quadrados na horizontal 
-        -time_step: Tempo (s) de espera entre deteccoes para poder movimentar o padrao 
+        -board_h: Quantidade de cantos com intersecao de 4 quadrados na vertical
+        -board_w: Quantidade de cantos com intersecao de 4 quadrados na horizontal
+        -time_step: Tempo (s) de espera entre deteccoes para poder movimentar o padrao
         -max_images: Numero total de fotos tiradas do padrao para fazer a calibracao
 
     Retorno:
@@ -84,7 +84,7 @@ calcular a matriz dos parametros intrinsecos da camera e os parametros de distor
 
 def correct_distortion(WebCam, mtx, dist):
     '''
-    Metodo para corrigir a distorcao na imagem da webcam e mostrar na tela a imagem original da camera e a 
+    Metodo para corrigir a distorcao na imagem da webcam e mostrar na tela a imagem original da camera e a
 imagem sem distorcao
 
     Parametros:
@@ -100,10 +100,10 @@ imagem sem distorcao
     grab, img = WebCam.read()
     h,  w = img.shape[:2]
     newcameramtx, _ = cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
-    
+
     # Mapeamento para retirar a distorcao da imagem
     mapx, mapy = cv2.initUndistortRectifyMap(mtx,dist,None,newcameramtx,(w,h),5)
-    
+
     print('Aperte q para sair')
     while True:
         grab, img = WebCam.read()
@@ -111,7 +111,7 @@ imagem sem distorcao
             break
 
         cv2.imshow("raw", img)
-        
+
         #remapeamento
         dst = cv2.remap(img,mapx, mapy,cv2.INTER_LINEAR)
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
     #numero de imagens que queremos detectar o tabuleiro de xadrez para
     #calcular os parametros intrinsecos da camera
-    max_images = 10
+    max_images = 5
 
     #Numero de bordas (com 4 quadrados) na vertical e na horizontal do tabuleiro
     board_w = 8
