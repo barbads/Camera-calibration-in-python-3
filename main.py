@@ -6,9 +6,15 @@ from camera_calibration import correct_distortion
 from math import sqrt
 import pandas as pd
 
-coord1 = (0,0)
-coord2 = (0,0)
-firstclick = 0
+# Inicializacao de variaveis globais para o primeiro requisito
+pixel_inicial = 0
+pixel_final = 0
+aux_x = 0
+aux_y = 0
+
+# Variaveis globais para os demais requisitos
+ParamInt = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 1]], dtype = float)
+ParamExt = np.array([0, 0, 0, 0, 0], dtype = float)
 
 def Draw_line(event,x,y,flags,param):
     global contador
@@ -57,9 +63,8 @@ if(str(sys.argv[1])) == '-r1':
             cv2.namedWindow('Resultado')
             cv2.imshow('Resultado', resultado)
 
-        if cv2.waitKey(25) == 27:
-            cv2.destroyWindow('Webcam')
-            cv2.destroyWindow('Resultado')
+        if cv2.waitKey(0) == 27:
+            cv2.destroyAllWindows()
             break
     video.release()
 
@@ -104,27 +109,56 @@ if (str(sys.argv[1]) == '-r2'):
         PD_4 = np.append(PD_4, dist[0][3])
         PD_5 = np.append(PD_5, dist[0][4])
 
-print('Media :')
-print('%.2f'%PI_11.mean())
-print('%.2f'%PI_13.mean())
-print('%.2f'%PI_22.mean())
-print('%.2f'%PI_23.mean())
-print('%.2f'%PD_1.mean())
-print('%.2f'%PD_2.mean())
-print('%.2f'%PD_3.mean())
-print('%.2f'%PD_4.mean())
-print('%.2f'%PD_5.mean())
-print()
+    ParamInt[0][0] = PI_11.mean()
+    ParamInt[0][2] = PI_13.mean()
+    ParamInt[1][1] = PI_22.mean()
+    ParamInt[1][2] = PI_23.mean()
 
-print('Desvio Padrao :')
-print('%.2f'%PI_11.std())
-print('%.2f'%PI_13.std())
-print('%.2f'%PI_22.std())
-print('%.2f'%PI_23.std())
-print('%.2f'%PD_1.std())
-print('%.2f'%PD_2.std())
-print('%.2f'%PD_3.std())
-print('%.2f'%PD_4.std())
-print('%.2f'%PD_5.std())
+    ParamExt[0] = PD_1.mean()
+    ParamExt[1] = PD_2.mean()
+    ParamExt[2] = PD_3.mean()
+    ParamExt[3] = PD_4.mean()
+    ParamExt[4] = PD_5.mean()
 
-cv2.destroyAllWindows()
+    strvalue = ""
+    for i in range (3):
+        for j in range (3):
+            strvalue += (str(ParamInt[i][j])) 
+            strvalue += ("\n")
+
+    strvalue += ("\n")
+
+    for i in range(5):
+        strvalue += str(ParamExt[i])
+        strvalue += ("\n")
+
+
+    file = open("parametros.txt", "w")
+    file.writelines(strvalue)
+
+    correct_distortion(WebCam, ParamInt, ParamExt)
+
+    print('Media :')
+    print(ParamInt)
+    print(ParamExt)
+
+    for i, j in range (2,2):
+        print(i)
+        print(j)
+
+
+    print('Desvio Padrao :')
+    print('%.2f'%PI_11.std())
+    print('%.2f'%PI_13.std())
+    print('%.2f'%PI_22.std())
+    print('%.2f'%PI_23.std())
+    print('%.2f'%PD_1.std())
+    print('%.2f'%PD_2.std())
+    print('%.2f'%PD_3.std())
+    print('%.2f'%PD_4.std())
+    print('%.2f'%PD_5.std())
+
+    cv2.destroyAllWindows()
+
+if (str(sys.argv[1]) == '-r3'):
+    print(ParamInt)
