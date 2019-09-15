@@ -80,7 +80,7 @@ calcular a matriz dos parametros intrinsecos da camera e os parametros de distor
     print('Intrinsic parameters matrix:\n{}'.format(mtx))
     print('Distortion parameters:\n{}'.format(dist))
 
-    return mtx, dist
+    return mtx, dist, rvecs, tvecs
 
 def correct_distortion(WebCam, mtx, dist):
     '''

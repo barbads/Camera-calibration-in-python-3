@@ -99,7 +99,7 @@ def main():
         time_step = 2
 
         for i in range(5):
-            mtx, dist = calibration(WebCam, tam_quad, board_h, board_w, time_step, max_images)
+            mtx, dist, R, T = calibration(WebCam, tam_quad, board_h, board_w, time_step, max_images)
             PI_11 = np.append(PI_11, mtx[0][0])
             PI_13 = np.append(PI_13, mtx[0][2])
             PI_22 = np.append(PI_22, mtx[1][1])
@@ -124,7 +124,7 @@ def main():
         strvalue = ""
         for i in range (3):
             for j in range (3):
-                strvalue += (str(IntParam[i][j])) 
+                strvalue += (str(IntParam[i][j]))
                 strvalue += ("\n")
 
         strvalue += ("\n")
@@ -138,7 +138,7 @@ def main():
         file.writelines(strvalue)
 
         correct_distortion(WebCam, IntParam, DistParam)
-        
+
         print('Media :')
         print(IntParam)
         print(DistParam)
@@ -157,7 +157,76 @@ def main():
         cv2.destroyAllWindows()
 
     if (str(sys.argv[1]) == '-r3'):
-        print("eae")
+        WebCam = cv2.VideoCapture(0)
+        R11 = np.empty(0)
+        R12 = np.empty(0)
+        R13 = np.empty(0)
+        R21 = np.empty(0)
+        R22 = np.empty(0)
+        R23 = np.empty(0)
+        R31 = np.empty(0)
+        R32 = np.empty(0)
+        R33 = np.empty(0)
+        T1 = np.empty(0)
+        T2 = np.empty(0)
+        T3 = np.empty(0)
+
+        # contador para o numero de imagens onde o xadrez foi detectado
+        detected_images = 0
+
+        #numero de imagens que queremos detectar o tabuleiro de xadrez para
+        #calcular os parametros intrinsecos da camera
+        max_images = 5
+
+        #Numero de bordas (com 4 quadrados) na vertical e na horizontal do tabuleiro
+        board_w = 8
+        board_h = 6
+
+        #tamanho em mm do quadrado
+        tam_quad = 29
+
+        #determina o tempo (s) de espera para mudar o tabuleiro de posicao apos uma deteccao
+        time_step = 2
+
+        for i in range(5):
+            mtx, dist, R, T = calibration(WebCam, tam_quad, board_h, board_w, time_step, max_images)
+            R11 = np.append(R11, R[0][0])
+            R12 = np.append(R12, R[0][1])
+            R13 = np.append(R13, R[0][2])
+            R21 = np.append(R21, R[1][0])
+            R22 = np.append(R22, R[1][1])
+            R23 = np.append(R23, R[1][2])
+            R31 = np.append(R31, R[2][1])
+            R32 = np.append(R32, R[2][2])
+            R33 = np.append(R33, R[2][3])
+            T1 = np.append(R33, T[0][0])
+            T2 = np.append(R33, T[0][1])
+            T3 = np.append(R33, T[0][2])
+
+        ExtParam[0][0] = R11.mean()
+        ExtParam[0][1] = R12.mean()
+        ExtParam[0][2] = R13.mean()
+        ExtParam[1][0] = R21.mean()
+        ExtParam[1][1] = R22.mean()
+        ExtParam[1][2] = R23.mean()
+        ExtParam[2][0] = R31.mean()
+        ExtParam[2][1] = R32.mean()
+        ExtParam[2][2] = R33.mean()
+
+        TranParam[0] = T1.mean()
+        TranParam[1] = T2.mean()
+        TranParam[2] = T3.mean()
+
+
+        print("Matrix R: ")
+
+        print(ExtParam)
+        print()
+
+        print("Matrix T: ")
+        print(TranParam)
+
+        cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
