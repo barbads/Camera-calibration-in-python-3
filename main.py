@@ -17,6 +17,9 @@ nova_imagem = 0
 # Variaveis globais para os demais requisitos
 IntParam = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 1]], dtype = float)
 DistParam = np.array([0, 0, 0, 0, 0], dtype = float)
+ExtParam = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]], dtype = float)
+TranParam = np.array([0, 0, 0], dtype = float)
+
 
 def Draw_line(event,x,y,flags,param):
     global contador
@@ -40,6 +43,7 @@ def Draw_line(event,x,y,flags,param):
 
 
 def main():
+    global IntParam, ExtParam, TranParam, DistParam
 
     if(str(sys.argv[1])) == '-r1':
         video = cv2.VideoCapture(0)
@@ -196,9 +200,9 @@ def main():
             R21 = np.append(R21, R[1][0])
             R22 = np.append(R22, R[1][1])
             R23 = np.append(R23, R[1][2])
-            R31 = np.append(R31, R[2][1])
-            R32 = np.append(R32, R[2][2])
-            R33 = np.append(R33, R[2][3])
+            R31 = np.append(R31, R[2][0])
+            R32 = np.append(R32, R[2][1])
+            R33 = np.append(R33, R[2][2])
             T1 = np.append(R33, T[0][0])
             T2 = np.append(R33, T[0][1])
             T3 = np.append(R33, T[0][2])
