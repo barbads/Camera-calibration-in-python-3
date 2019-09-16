@@ -12,12 +12,11 @@ pixel_final = 0
 aux_x = 0
 aux_y = 0
 contador = 0
-contador = 0
 nova_imagem = 0
 # Variaveis globais para os demais requisitos
 IntParam = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 1]], dtype = float)
 DistParam = np.array([0, 0, 0, 0, 0], dtype = float)
-ExtParam = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]], dtype = float)
+ExtParam = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype = float)
 TranParam = np.array([0, 0, 0], dtype = float)
 
 
@@ -40,6 +39,15 @@ def Draw_line(event,x,y,flags,param):
             contador = 0
             dist = sqrt((x-aux_x)**2 + (y-aux_y)**2)
             print(dist)
+
+def realDistanceCalculator(camera_matrix,extrinsics,x,y):
+    pseudo_inv_extrinsics = np.linalg.pinv(extrinsics)
+    intrinsics_inv = np.linalg.inv(camera_matrix)
+    pixels_matrix = np.array((x,y,1))
+    ans = np.matmul(intrinsics_inv,pixels_matrix)
+    ans = np.matmul(pseudo_inv_extrinsics,ans)
+    ans /= ans[-1]
+    return ans
 
 
 def main():
@@ -162,6 +170,15 @@ def main():
 
     if (str(sys.argv[1]) == '-r3'):
         WebCam = cv2.VideoCapture(0)
+        PI_11 = np.empty(0)
+        PI_13 = np.empty(0)
+        PI_22 = np.empty(0)
+        PI_23 = np.empty(0)
+        PD_1 = np.empty(0)
+        PD_2 = np.empty(0)
+        PD_3 = np.empty(0)
+        PD_4 = np.empty(0)
+        PD_5 = np.empty(0)
         R11 = np.empty(0)
         R12 = np.empty(0)
         R13 = np.empty(0)
@@ -180,7 +197,7 @@ def main():
 
         #numero de imagens que queremos detectar o tabuleiro de xadrez para
         #calcular os parametros intrinsecos da camera
-        max_images = 5
+        max_images = 2
 
         #Numero de bordas (com 4 quadrados) na vertical e na horizontal do tabuleiro
         board_w = 8
@@ -192,43 +209,88 @@ def main():
         #determina o tempo (s) de espera para mudar o tabuleiro de posicao apos uma deteccao
         time_step = 2
 
-        for i in range(5):
-            mtx, dist, R, T = calibration(WebCam, tam_quad, board_h, board_w, time_step, max_images)
-            R11 = np.append(R11, R[0][0])
-            R12 = np.append(R12, R[0][1])
-            R13 = np.append(R13, R[0][2])
-            R21 = np.append(R21, R[1][0])
-            R22 = np.append(R22, R[1][1])
-            R23 = np.append(R23, R[1][2])
-            R31 = np.append(R31, R[2][0])
-            R32 = np.append(R32, R[2][1])
-            R33 = np.append(R33, R[2][2])
-            T1 = np.append(R33, T[0][0])
-            T2 = np.append(R33, T[0][1])
-            T3 = np.append(R33, T[0][2])
+        for i in range(max_images):
+            mtx, dist, R, T = calibration(WebCam, tam_quad, board_h, board_w, time_step, 1)
+            rotation_matrix = np.zeros(shape=(3,3))
+            cv2.Rodrigues(R[0], rotation_matrix)
+            R11 = np.append(R11, rotation_matrix[0][0])
+            R12 = np.append(R12, rotation_matrix[0][1])
+            R13 = np.append(R13, rotation_matrix[0][2])
+            R21 = np.append(R21, rotation_matrix[1][0])
+            R22 = np.append(R22, rotation_matrix[1][1])
+            R23 = np.append(R23, rotation_matrix[1][2])
+            R31 = np.append(R31, rotation_matrix[2][0])
+            R32 = np.append(R32, rotation_matrix[2][1])
+            R33 = np.append(R33, rotation_matrix[2][2])
+            PI_11 = np.append(PI_11, mtx[0][0])
+            PI_13 = np.append(PI_13, mtx[0][2])
+            PI_22 = np.append(PI_22, mtx[1][1])
+            PI_23 = np.append(PI_23, mtx[1][2])
+            PD_1 = np.append(PD_1, dist[0][0])
+            PD_2 = np.append(PD_2, dist[0][1])
+            PD_3 = np.append(PD_3, dist[0][2])
+            PD_4 = np.append(PD_4, dist[0][3])
+            PD_5 = np.append(PD_5, dist[0][4])
 
-        ExtParam[0][0] = R11.mean()
-        ExtParam[0][1] = R12.mean()
-        ExtParam[0][2] = R13.mean()
-        ExtParam[1][0] = R21.mean()
-        ExtParam[1][1] = R22.mean()
-        ExtParam[1][2] = R23.mean()
-        ExtParam[2][0] = R31.mean()
-        ExtParam[2][1] = R32.mean()
-        ExtParam[2][2] = R33.mean()
+            T1 = np.append(T1, T[0][0])
+            T2 = np.append(T2, T[0][1])
+            T3 = np.append(T3, T[0][2])
 
         TranParam[0] = T1.mean()
         TranParam[1] = T2.mean()
         TranParam[2] = T3.mean()
 
+        ExtParam[0][0] = R11.mean()
+        ExtParam[0][1] = R12.mean()
+        ExtParam[0][2] = R13.mean()
+        ExtParam[0][3] = TranParam[0]
+        ExtParam[1][0] = R21.mean()
+        ExtParam[1][1] = R22.mean()
+        ExtParam[1][2] = R23.mean()
+        ExtParam[1][3] = TranParam[1]
+        ExtParam[2][0] = R31.mean()
+        ExtParam[2][1] = R32.mean()
+        ExtParam[2][2] = R33.mean()
+        ExtParam[2][3] = TranParam[2]
 
-        print("Matrix R: ")
+        IntParam[0][0] = PI_11.mean()
+        IntParam[0][2] = PI_13.mean()
+        IntParam[1][1] = PI_22.mean()
+        IntParam[1][2] = PI_23.mean()
 
+        DistParam[0] = PD_1.mean()
+        DistParam[1] = PD_2.mean()
+        DistParam[2] = PD_3.mean()
+        DistParam[3] = PD_4.mean()
+        DistParam[4] = PD_5.mean()
+
+
+
+
+        #
+        # print("Matrix R: ")
+        # print(ExtParam)
+        # print()
+        #
+        # print("Matrix T: ")
+        # print(TranParam)
+        # print()
+        #
+        #
+        # print("Matrix Distorcao: ")
+        # print(DistParam)
+        # print()
+
+        print("Matriz Intrinsecos: ")
+        print(IntParam)
+        print()
+
+        print("Matriz Extrinsecos: ")
         print(ExtParam)
         print()
 
-        print("Matrix T: ")
-        print(TranParam)
+
+        # realDistanceCalculator()
 
         cv2.destroyAllWindows()
 

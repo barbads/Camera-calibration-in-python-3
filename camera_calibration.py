@@ -77,8 +77,8 @@ calcular a matriz dos parametros intrinsecos da camera e os parametros de distor
     #Faz a calibracao da camera
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
 
-    print('Intrinsic parameters matrix:\n{}'.format(mtx))
-    print('Distortion parameters:\n{}'.format(dist))
+    # print('Intrinsic parameters matrix:\n{}'.format(mtx))
+    # print('Distortion parameters:\n{}'.format(dist))
 
     return mtx, dist, rvecs, tvecs
 
