@@ -144,7 +144,7 @@ def main():
         file = open("parametros.txt", "w")
         file.writelines(strvalue)
 
-        correct_distortion(WebCam, IntParam, DistParam)
+        correct_distortion(WebCam, IntParam, DistParam, ExtParam, 2)
 
         print('Media :')
         print(IntParam)
@@ -326,8 +326,6 @@ def main():
         T2 = np.empty(0)
         T3 = np.empty(0)
 
-        # realDistanceCalculator()
-
         cv2.destroyAllWindows()
 
     if (str(sys.argv[1]) == '-r4'):
@@ -494,7 +492,7 @@ def main():
         T3 = np.empty(0)
 
         print("Clique em 2 pontos para medir a distancia")
-        correct_distortion(WebCam, IntParam, DistParam, ExtParam)
+        correct_distortion(WebCam, IntParam, DistParam, ExtParam, 4)
 
 
 if __name__ == '__main__':

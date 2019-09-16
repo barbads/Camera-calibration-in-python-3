@@ -134,7 +134,7 @@ calcular a matriz dos parametros intrinsecos da camera e os parametros de distor
 
     return mtx, dist, rvecs, tvecs
 
-def correct_distortion(WebCam, mtx, dist, ext):
+def correct_distortion(WebCam, mtx, dist, ext, req):
     '''
     Metodo para corrigir a distorcao na imagem da webcam e mostrar na tela a imagem original da camera e a
 imagem sem distorcao
@@ -153,7 +153,8 @@ imagem sem distorcao
     #Inicializa as janelas raw e undistorted
     cv2.namedWindow("raw")
     cv2.namedWindow("undistorted")
-    cv2.setMouseCallback("undistorted", Mede_dist)
+    if(req == 4):
+        cv2.setMouseCallback("undistorted", Mede_dist)
 
     grab, img = WebCam.read()
     h,  w = img.shape[:2]
