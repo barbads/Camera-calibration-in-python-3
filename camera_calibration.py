@@ -25,6 +25,7 @@ calcular a matriz dos parametros intrinsecos da camera e os parametros de distor
     # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
     objp = np.zeros((board_h*board_w,3), dtype='float32')
     objp[:,:2] = np.mgrid[0:board_w,0:board_h].T.reshape(-1,2)
+    objp *= tam_quad
 
     # Arrays to store object points and image points from all the images.
     objpoints = [] # 3d point in real world space

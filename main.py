@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 import cv2
+import time
 from camera_calibration import calibration
 from camera_calibration import correct_distortion
 from math import sqrt
@@ -18,6 +19,10 @@ IntParam = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 1]], dtype = float)
 DistParam = np.array([0, 0, 0, 0, 0], dtype = float)
 ExtParam = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype = float)
 TranParam = np.array([0, 0, 0], dtype = float)
+
+DesvPadInt = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 1]], dtype = float)
+DesvPadDist = np.array([0, 0, 0, 0, 0], dtype = float)
+DesvPadExt = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype = float)
 
 
 def Draw_line(event,x,y,flags,param):
@@ -40,15 +45,22 @@ def Draw_line(event,x,y,flags,param):
             dist = sqrt((x-aux_x)**2 + (y-aux_y)**2)
             print(dist)
 
-def realDistanceCalculator(camera_matrix,extrinsics,x,y):
-    pseudo_inv_extrinsics = np.linalg.pinv(extrinsics)
-    intrinsics_inv = np.linalg.inv(camera_matrix)
+def realDistanceCalculator(intrinsecos,extrinsecos,x,y):
+    pseudo_inv_extrinsecos = np.linalg.pinv(extrinsecos)
+    intrinsecos_inv = np.linalg.inv(intrinsecos)
     pixels_matrix = np.array((x,y,1))
     ans = np.matmul(intrinsics_inv,pixels_matrix)
-    ans = np.matmul(pseudo_inv_extrinsics,ans)
+    ans = np.matmul(pseudo_inv_extrinsecos,ans)
     ans /= ans[-1]
     return ans
 
+def distanceBetweenTwoPixels(pixel1,pixel2, intrinsics, extrinsics):
+    p1 = realDistanceCalculator(intrinsics, extrinsics, pixel1[0], pixel2[1])
+    p2 = realDistanceCalculator(intrinsics, extrinsics, pixel2[0], pixel2[1])
+    aux = p2 - p1
+    pixel1.clear()
+    pixel2.clear()
+    return aux
 
 def main():
     global IntParam, ExtParam, TranParam, DistParam
@@ -192,9 +204,6 @@ def main():
         T2 = np.empty(0)
         T3 = np.empty(0)
 
-        # contador para o numero de imagens onde o xadrez foi detectado
-        detected_images = 0
-
         #numero de imagens que queremos detectar o tabuleiro de xadrez para
         #calcular os parametros intrinsecos da camera
         max_images = 2
@@ -208,9 +217,14 @@ def main():
 
         #determina o tempo (s) de espera para mudar o tabuleiro de posicao apos uma deteccao
         time_step = 2
+        distancias = 3
 
-        for i in range(max_images):
-            mtx, dist, R, T = calibration(WebCam, tam_quad, board_h, board_w, time_step, 1)
+        for i in range(distancias):
+            mtx, dist, R, T = calibration(WebCam, tam_quad, board_h, board_w, time_step, max_images)
+            print("Distancia ", i, " feita", end='')
+            if(i != (distancias - 1)):
+                print(", vá para a proxima distancia")
+            start_time = time.time()
             rotation_matrix = np.zeros(shape=(3,3))
             cv2.Rodrigues(R[0], rotation_matrix)
             R11 = np.append(R11, rotation_matrix[0][0])
@@ -222,10 +236,12 @@ def main():
             R31 = np.append(R31, rotation_matrix[2][0])
             R32 = np.append(R32, rotation_matrix[2][1])
             R33 = np.append(R33, rotation_matrix[2][2])
+
             PI_11 = np.append(PI_11, mtx[0][0])
             PI_13 = np.append(PI_13, mtx[0][2])
             PI_22 = np.append(PI_22, mtx[1][1])
             PI_23 = np.append(PI_23, mtx[1][2])
+
             PD_1 = np.append(PD_1, dist[0][0])
             PD_2 = np.append(PD_2, dist[0][1])
             PD_3 = np.append(PD_3, dist[0][2])
@@ -235,10 +251,12 @@ def main():
             T1 = np.append(T1, T[0][0])
             T2 = np.append(T2, T[0][1])
             T3 = np.append(T3, T[0][2])
+            if(i != (distancias - 1)):
+                while(time.time() - start_time < 3):
+                    pass
 
-        TranParam[0] = T1.mean()
-        TranParam[1] = T2.mean()
-        TranParam[2] = T3.mean()
+        print()
+        TranParam = T1.mean(), T2.mean(), T3.mean()
 
         ExtParam[0][0] = R11.mean()
         ExtParam[0][1] = R12.mean()
@@ -258,36 +276,47 @@ def main():
         IntParam[1][1] = PI_22.mean()
         IntParam[1][2] = PI_23.mean()
 
-        DistParam[0] = PD_1.mean()
-        DistParam[1] = PD_2.mean()
-        DistParam[2] = PD_3.mean()
-        DistParam[3] = PD_4.mean()
-        DistParam[4] = PD_5.mean()
+        DistParam = PD_1.mean(), PD_2.mean(), PD_3.mean(), PD_4.mean(), PD_5.mean()
 
+        DesvPadExt[0][0] = R11.std()
+        DesvPadExt[0][1] = R12.std()
+        DesvPadExt[0][2] = R13.std()
+        DesvPadExt[0][3] = T1.std()
+        DesvPadExt[1][0] = R21.std()
+        DesvPadExt[1][1] = R22.std()
+        DesvPadExt[1][2] = R23.std()
+        DesvPadExt[1][3] = T2.std()
+        DesvPadExt[2][0] = R31.std()
+        DesvPadExt[2][1] = R32.std()
+        DesvPadExt[2][2] = R33.std()
+        DesvPadExt[2][3] = T3.std()
 
+        DesvPadInt[0][0] = PI_11.std()
+        DesvPadInt[0][2] = PI_13.std()
+        DesvPadInt[1][1] = PI_22.std()
+        DesvPadInt[1][2] = PI_23.std()
 
-
-        #
-        # print("Matrix R: ")
-        # print(ExtParam)
-        # print()
-        #
-        # print("Matrix T: ")
-        # print(TranParam)
-        # print()
-        #
-        #
-        # print("Matrix Distorcao: ")
-        # print(DistParam)
-        # print()
+        DesvPadDist = PD_1.std(), PD_2.std(), PD_3.std(), PD_4.std(), PD_5.std()
 
         print("Matriz Intrinsecos: ")
+        print("Media")
         print(IntParam)
+        print("Desvio Padrao")
+        print(DesvPadInt)
         print()
 
         print("Matriz Extrinsecos: ")
+        print("Media")
         print(ExtParam)
+        print("Desvio Padrao")
+        print(DesvPadExt)
         print()
+
+        print("Distorcao: ")
+        print("Media")
+        print(DistParam)
+        print("Desvio Padrao")
+        print(DesvPadDist)
 
 
         # realDistanceCalculator()
