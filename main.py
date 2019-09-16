@@ -45,23 +45,6 @@ def Draw_line(event,x,y,flags,param):
             dist = sqrt((x-aux_x)**2 + (y-aux_y)**2)
             print(dist)
 
-def realDistanceCalculator(intrinsecos,extrinsecos,x,y):
-    pseudo_inv_extrinsecos = np.linalg.pinv(extrinsecos)
-    intrinsecos_inv = np.linalg.inv(intrinsecos)
-    pixels_matrix = np.array((x,y,1))
-    ans = np.matmul(intrinsics_inv,pixels_matrix)
-    ans = np.matmul(pseudo_inv_extrinsecos,ans)
-    ans /= ans[-1]
-    return ans
-
-def distanceBetweenTwoPixels(pixel1,pixel2, intrinsics, extrinsics):
-    p1 = realDistanceCalculator(intrinsics, extrinsics, pixel1[0], pixel2[1])
-    p2 = realDistanceCalculator(intrinsics, extrinsics, pixel2[0], pixel2[1])
-    aux = p2 - p1
-    pixel1.clear()
-    pixel2.clear()
-    return aux
-
 def main():
     global IntParam, ExtParam, TranParam, DistParam
 
@@ -168,15 +151,15 @@ def main():
         print(DistParam)
 
         print('Desvio Padrao :')
-        print('%.2f'%PI_11.std())
-        print('%.2f'%PI_13.std())
-        print('%.2f'%PI_22.std())
-        print('%.2f'%PI_23.std())
-        print('%.2f'%PD_1.std())
-        print('%.2f'%PD_2.std())
-        print('%.2f'%PD_3.std())
-        print('%.2f'%PD_4.std())
-        print('%.2f'%PD_5.std())
+        print('%.2f'%PI_11.std(ddof=1))
+        print('%.2f'%PI_13.std(ddof=1))
+        print('%.2f'%PI_22.std(ddof=1))
+        print('%.2f'%PI_23.std(ddof=1))
+        print('%.2f'%PD_1.std(ddof=1))
+        print('%.2f'%PD_2.std(ddof=1))
+        print('%.2f'%PD_3.std(ddof=1))
+        print('%.2f'%PD_4.std(ddof=1))
+        print('%.2f'%PD_5.std(ddof=1))
 
         cv2.destroyAllWindows()
 
@@ -206,7 +189,7 @@ def main():
 
         #numero de imagens que queremos detectar o tabuleiro de xadrez para
         #calcular os parametros intrinsecos da camera
-        max_images = 2
+        max_images = 3
 
         #Numero de bordas (com 4 quadrados) na vertical e na horizontal do tabuleiro
         board_w = 8
@@ -217,13 +200,15 @@ def main():
 
         #determina o tempo (s) de espera para mudar o tabuleiro de posicao apos uma deteccao
         time_step = 2
-        distancias = 3
+        iteracoes = 3
 
-        for i in range(distancias):
+        for i in range(iteracoes):
             mtx, dist, R, T = calibration(WebCam, tam_quad, board_h, board_w, time_step, max_images)
-            print("Distancia ", i, " feita", end='')
-            if(i != (distancias - 1)):
-                print(", vá para a proxima distancia")
+
+            print("Iteracao ", i+1, " feita", end='')
+            if(i != (iteracoes - 1)):
+                print(", preparando proxima iteracao\n")
+
             start_time = time.time()
             rotation_matrix = np.zeros(shape=(3,3))
             cv2.Rodrigues(R[0], rotation_matrix)
@@ -251,11 +236,11 @@ def main():
             T1 = np.append(T1, T[0][0])
             T2 = np.append(T2, T[0][1])
             T3 = np.append(T3, T[0][2])
-            if(i != (distancias - 1)):
-                while(time.time() - start_time < 3):
+
+            if(i != (iteracoes - 1)):
+                while(time.time() - start_time < 2):
                     pass
 
-        print()
         TranParam = T1.mean(), T2.mean(), T3.mean()
 
         ExtParam[0][0] = R11.mean()
@@ -278,25 +263,26 @@ def main():
 
         DistParam = PD_1.mean(), PD_2.mean(), PD_3.mean(), PD_4.mean(), PD_5.mean()
 
-        DesvPadExt[0][0] = R11.std()
-        DesvPadExt[0][1] = R12.std()
-        DesvPadExt[0][2] = R13.std()
-        DesvPadExt[0][3] = T1.std()
-        DesvPadExt[1][0] = R21.std()
-        DesvPadExt[1][1] = R22.std()
-        DesvPadExt[1][2] = R23.std()
-        DesvPadExt[1][3] = T2.std()
-        DesvPadExt[2][0] = R31.std()
-        DesvPadExt[2][1] = R32.std()
-        DesvPadExt[2][2] = R33.std()
-        DesvPadExt[2][3] = T3.std()
+        DesvPadExt[0][0] = R11.std(ddof=1)
+        DesvPadExt[0][1] = R12.std(ddof=1)
+        DesvPadExt[0][2] = R13.std(ddof=1)
+        DesvPadExt[0][3] = T1.std(ddof=1)
+        DesvPadExt[1][0] = R21.std(ddof=1)
+        DesvPadExt[1][1] = R22.std(ddof=1)
+        DesvPadExt[1][2] = R23.std(ddof=1)
+        DesvPadExt[1][3] = T2.std(ddof=1)
+        DesvPadExt[2][0] = R31.std(ddof=1)
+        DesvPadExt[2][1] = R32.std(ddof=1)
+        DesvPadExt[2][2] = R33.std(ddof=1)
+        DesvPadExt[2][3] = T3.std(ddof=1)
 
-        DesvPadInt[0][0] = PI_11.std()
-        DesvPadInt[0][2] = PI_13.std()
-        DesvPadInt[1][1] = PI_22.std()
-        DesvPadInt[1][2] = PI_23.std()
+        DesvPadInt[0][0] = PI_11.std(ddof=1)
+        DesvPadInt[0][2] = PI_13.std(ddof=1)
+        DesvPadInt[1][1] = PI_22.std(ddof=1)
+        DesvPadInt[1][2] = PI_23.std(ddof=1)
 
-        DesvPadDist = PD_1.std(), PD_2.std(), PD_3.std(), PD_4.std(), PD_5.std()
+        DesvPadDist = PD_1.std(ddof=1), PD_2.std(ddof=1), PD_3.std(ddof=1), PD_4.std(ddof=1), PD_5.std(ddof=1)
+
 
         print("Matriz Intrinsecos: ")
         print("Media")
@@ -318,10 +304,197 @@ def main():
         print("Desvio Padrao")
         print(DesvPadDist)
 
+        PI_11 = np.empty(0)
+        PI_13 = np.empty(0)
+        PI_22 = np.empty(0)
+        PI_23 = np.empty(0)
+        PD_1 = np.empty(0)
+        PD_2 = np.empty(0)
+        PD_3 = np.empty(0)
+        PD_4 = np.empty(0)
+        PD_5 = np.empty(0)
+        R11 = np.empty(0)
+        R12 = np.empty(0)
+        R13 = np.empty(0)
+        R21 = np.empty(0)
+        R22 = np.empty(0)
+        R23 = np.empty(0)
+        R31 = np.empty(0)
+        R32 = np.empty(0)
+        R33 = np.empty(0)
+        T1 = np.empty(0)
+        T2 = np.empty(0)
+        T3 = np.empty(0)
 
         # realDistanceCalculator()
 
         cv2.destroyAllWindows()
+
+    if (str(sys.argv[1]) == '-r4'):
+        WebCam = cv2.VideoCapture(0)
+        PI_11 = np.empty(0)
+        PI_13 = np.empty(0)
+        PI_22 = np.empty(0)
+        PI_23 = np.empty(0)
+        PD_1 = np.empty(0)
+        PD_2 = np.empty(0)
+        PD_3 = np.empty(0)
+        PD_4 = np.empty(0)
+        PD_5 = np.empty(0)
+        R11 = np.empty(0)
+        R12 = np.empty(0)
+        R13 = np.empty(0)
+        R21 = np.empty(0)
+        R22 = np.empty(0)
+        R23 = np.empty(0)
+        R31 = np.empty(0)
+        R32 = np.empty(0)
+        R33 = np.empty(0)
+        T1 = np.empty(0)
+        T2 = np.empty(0)
+        T3 = np.empty(0)
+
+        #numero de imagens que queremos detectar o tabuleiro de xadrez para
+        #calcular os parametros intrinsecos da camera
+        max_images = 5
+        iteracoes = 5
+
+        #Numero de bordas (com 4 quadrados) na vertical e na horizontal do tabuleiro
+        board_w = 8
+        board_h = 6
+
+        #tamanho em mm do quadrado
+        tam_quad = 29
+
+        #determina o tempo (s) de espera para mudar o tabuleiro de posicao apos uma deteccao
+        time_step = 2
+
+        for i in range(iteracoes):
+            mtx, dist, R, T = calibration(WebCam, tam_quad, board_h, board_w, time_step, max_images)
+
+            print("Iteracao ", i+1, " feita", end='')
+            if(i != (iteracoes - 1)):
+                print(", preparando proxima iteracao\n")
+
+            start_time = time.time()
+            rotation_matrix = np.zeros(shape=(3,3))
+            cv2.Rodrigues(R[0], rotation_matrix)
+            R11 = np.append(R11, rotation_matrix[0][0])
+            R12 = np.append(R12, rotation_matrix[0][1])
+            R13 = np.append(R13, rotation_matrix[0][2])
+            R21 = np.append(R21, rotation_matrix[1][0])
+            R22 = np.append(R22, rotation_matrix[1][1])
+            R23 = np.append(R23, rotation_matrix[1][2])
+            R31 = np.append(R31, rotation_matrix[2][0])
+            R32 = np.append(R32, rotation_matrix[2][1])
+            R33 = np.append(R33, rotation_matrix[2][2])
+
+            PI_11 = np.append(PI_11, mtx[0][0])
+            PI_13 = np.append(PI_13, mtx[0][2])
+            PI_22 = np.append(PI_22, mtx[1][1])
+            PI_23 = np.append(PI_23, mtx[1][2])
+
+            PD_1 = np.append(PD_1, dist[0][0])
+            PD_2 = np.append(PD_2, dist[0][1])
+            PD_3 = np.append(PD_3, dist[0][2])
+            PD_4 = np.append(PD_4, dist[0][3])
+            PD_5 = np.append(PD_5, dist[0][4])
+
+            T1 = np.append(T1, T[0][0])
+            T2 = np.append(T2, T[0][1])
+            T3 = np.append(T3, T[0][2])
+
+            if(i != (iteracoes - 1)):
+                while(time.time() - start_time < 2):
+                    pass
+
+        TranParam = T1.mean(), T2.mean(), T3.mean()
+
+        ExtParam[0][0] = R11.mean()
+        ExtParam[0][1] = R12.mean()
+        ExtParam[0][2] = R13.mean()
+        ExtParam[0][3] = TranParam[0]
+        ExtParam[1][0] = R21.mean()
+        ExtParam[1][1] = R22.mean()
+        ExtParam[1][2] = R23.mean()
+        ExtParam[1][3] = TranParam[1]
+        ExtParam[2][0] = R31.mean()
+        ExtParam[2][1] = R32.mean()
+        ExtParam[2][2] = R33.mean()
+        ExtParam[2][3] = TranParam[2]
+
+        IntParam[0][0] = PI_11.mean()
+        IntParam[0][2] = PI_13.mean()
+        IntParam[1][1] = PI_22.mean()
+        IntParam[1][2] = PI_23.mean()
+
+        DistParam = PD_1.mean(), PD_2.mean(), PD_3.mean(), PD_4.mean(), PD_5.mean()
+
+        DesvPadExt[0][0] = R11.std(ddof=1)
+        DesvPadExt[0][1] = R12.std(ddof=1)
+        DesvPadExt[0][2] = R13.std(ddof=1)
+        DesvPadExt[0][3] = T1.std(ddof=1)
+        DesvPadExt[1][0] = R21.std(ddof=1)
+        DesvPadExt[1][1] = R22.std(ddof=1)
+        DesvPadExt[1][2] = R23.std(ddof=1)
+        DesvPadExt[1][3] = T2.std(ddof=1)
+        DesvPadExt[2][0] = R31.std(ddof=1)
+        DesvPadExt[2][1] = R32.std(ddof=1)
+        DesvPadExt[2][2] = R33.std(ddof=1)
+        DesvPadExt[2][3] = T3.std(ddof=1)
+
+        DesvPadInt[0][0] = PI_11.std(ddof=1)
+        DesvPadInt[0][2] = PI_13.std(ddof=1)
+        DesvPadInt[1][1] = PI_22.std(ddof=1)
+        DesvPadInt[1][2] = PI_23.std(ddof=1)
+
+        DesvPadDist = PD_1.std(ddof=1), PD_2.std(ddof=1), PD_3.std(ddof=1), PD_4.std(ddof=1), PD_5.std(ddof=1)
+
+
+        print("Matriz Intrinsecos: ")
+        print("Media")
+        print(IntParam)
+        print("Desvio Padrao")
+        print(DesvPadInt)
+        print()
+
+        print("Matriz Extrinsecos: ")
+        print("Media")
+        print(ExtParam)
+        print("Desvio Padrao")
+        print(DesvPadExt)
+        print()
+
+        print("Distorcao: ")
+        print("Media")
+        print(DistParam)
+        print("Desvio Padrao")
+        print(DesvPadDist)
+
+        PI_11 = np.empty(0)
+        PI_13 = np.empty(0)
+        PI_22 = np.empty(0)
+        PI_23 = np.empty(0)
+        PD_1 = np.empty(0)
+        PD_2 = np.empty(0)
+        PD_3 = np.empty(0)
+        PD_4 = np.empty(0)
+        PD_5 = np.empty(0)
+        R11 = np.empty(0)
+        R12 = np.empty(0)
+        R13 = np.empty(0)
+        R21 = np.empty(0)
+        R22 = np.empty(0)
+        R23 = np.empty(0)
+        R31 = np.empty(0)
+        R32 = np.empty(0)
+        R33 = np.empty(0)
+        T1 = np.empty(0)
+        T2 = np.empty(0)
+        T3 = np.empty(0)
+
+        print("Clique em 2 pontos para medir a distancia")
+        correct_distortion(WebCam, IntParam, DistParam, ExtParam)
 
 
 if __name__ == '__main__':

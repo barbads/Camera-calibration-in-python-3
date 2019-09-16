@@ -1,6 +1,57 @@
 import numpy as np
 import cv2
 import time
+from math import sqrt
+
+Extrinc = np.zeros((3,4))
+Intrinc = np.zeros((3,3))
+contador = 0
+nova_imagem = 0
+pixel_inicial = 0
+pixel_final = 0
+aux_x = 0
+aux_y = 0
+
+def realDistanceCalculator(intrinsecos,extrinsecos,x,y):
+    pseudo_inv_extrinsecos = np.linalg.pinv(extrinsecos)
+    intrinsecos_inv = np.linalg.inv(intrinsecos)
+    pixels_matrix = np.array((x,y,1))
+    ans = np.matmul(intrinsecos_inv,pixels_matrix)
+    ans = np.matmul(pseudo_inv_extrinsecos,ans)
+    ans /= ans[-1]
+    return ans
+
+def distanceBetweenTwoPixels(pixel1,pixel2, intrinsics, extrinsics):
+    p1 = realDistanceCalculator(intrinsics, extrinsics, pixel1[0], pixel2[1])
+    p2 = realDistanceCalculator(intrinsics, extrinsics, pixel2[0], pixel2[1])
+    aux = p2 - p1
+    return aux
+
+def Mede_dist(event,x,y,flags,param):
+    global contador
+    global Extrinc
+    global Intrinc
+    global nova_imagem
+    global pixel_inicial
+    global pixel_final
+    global aux_x
+    global aux_y
+    if event == cv2.EVENT_LBUTTONDOWN:
+        if contador == 0:
+            aux_x = x
+            aux_y = y
+            contador = 1
+        elif contador == 1:
+            nova_imagem = 1;
+            pixel_inicial = (aux_x, aux_y)
+            pixel_final = (x,y)
+            contador = 0
+            vet_distancia = distanceBetweenTwoPixels(pixel_inicial, pixel_final, Intrinc, Extrinc)
+            print("Dist [X,Y,Z,0] : ", vet_distancia)
+            dist = sqrt((vet_distancia[0]**2) + (vet_distancia[1]**2) + (vet_distancia[2]**2))
+            print("Distancia real : %.2f"%dist, "mm")
+
+
 
 def calibration(WebCam, tam_quad, board_h, board_w, time_step, max_images):
     '''
@@ -83,7 +134,7 @@ calcular a matriz dos parametros intrinsecos da camera e os parametros de distor
 
     return mtx, dist, rvecs, tvecs
 
-def correct_distortion(WebCam, mtx, dist):
+def correct_distortion(WebCam, mtx, dist, ext):
     '''
     Metodo para corrigir a distorcao na imagem da webcam e mostrar na tela a imagem original da camera e a
 imagem sem distorcao
@@ -94,9 +145,15 @@ imagem sem distorcao
         -dist: parametros de distorcao da camera calculados na calibracao
     '''
 
+    global Extrinc
+    global Intrinc
+    Extrinc = ext
+    Intrinc = mtx
+
     #Inicializa as janelas raw e undistorted
     cv2.namedWindow("raw")
     cv2.namedWindow("undistorted")
+    cv2.setMouseCallback("undistorted", Mede_dist)
 
     grab, img = WebCam.read()
     h,  w = img.shape[:2]
@@ -146,5 +203,5 @@ if __name__ == "__main__":
     #determina o tempo (s) de espera para mudar o tabuleiro de posicao apos uma deteccao
     time_step = 2
 
-    mtx, dist = calibration(WebCam, tam_quad, board_h, board_w, time_step, max_images)
-    correct_distortion(WebCam, mtx, dist)
+    # mtx, dist = calibration(WebCam, tam_quad, board_h, board_w, time_step, max_images)
+    # correct_distortion(WebCam, mtx, dist)
